@@ -1,14 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mic, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Bujji = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        const userName = session.user.email?.split('@')[0] || 'there';
+        setMessages([{
+          role: 'assistant',
+          content: `Welcome back, ${userName}! I'm Bujji, your AI assistant. How can I help you today?`
+        }]);
+        setIsOpen(true);
+        setTimeout(() => setIsOpen(false), 5000);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleVoiceInput = () => {
     setIsListening(!isListening);
@@ -20,10 +38,16 @@ const Bujji = () => {
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
-    toast({
-      title: "Bujji says:",
-      description: "I'm processing your request...",
-    });
+    
+    setMessages(prev => [...prev, { role: 'user', content: message }]);
+    
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I'm here to help! I can assist you with fitness tracking, learning modules, environment monitoring, and more. What would you like to do?"
+      }]);
+    }, 500);
+    
     setMessage("");
   };
 
@@ -56,9 +80,18 @@ const Bujji = () => {
 
           <div className="flex-1 p-4 overflow-y-auto">
             <div className="space-y-3">
-              <div className="bg-muted/30 rounded-lg p-3 text-sm">
-                <p className="text-muted-foreground">Hello! I'm Bujji. How can I help you today?</p>
-              </div>
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`rounded-lg p-3 text-sm ${
+                    msg.role === 'assistant'
+                      ? 'bg-muted/30 text-muted-foreground'
+                      : 'bg-primary/10 text-foreground ml-8'
+                  }`}
+                >
+                  <p>{msg.content}</p>
+                </div>
+              ))}
             </div>
           </div>
 
