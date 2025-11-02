@@ -33,6 +33,23 @@ const Bujji = () => {
         const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
         console.log('Recognized:', transcript);
         
+        // Emergency detection
+        if (transcript.includes('emergency') || transcript.includes('urgent help')) {
+          setIsOpen(true);
+          const emergencyMsg = "🚨 EMERGENCY DETECTED! Stay calm naa! I'm here to help. What do you need?";
+          setMessages(prev => [...prev, 
+            { role: 'user', content: transcript },
+            { role: 'assistant', content: emergencyMsg }
+          ]);
+          speak(emergencyMsg);
+          toast({
+            title: "🚨 Emergency Mode Active",
+            description: "Bujji is ready to help immediately",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         // Wake word detection
         if (transcript.includes('hey bujji') || transcript.includes('hai bujji')) {
           if (!isOpen) {
